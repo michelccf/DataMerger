@@ -12,32 +12,36 @@ namespace DataMerger.Services
 {
     public class DataMergeService : IDataMergeService
     {
-        public DataMergeService() 
-        {
-            
-        }
+        public DataMergeService() {}
 
         public async Task StartProcess()
         {
-            List<LinhaGenerica> plan1 = LerPlanilha("planilha1.xlsx");
-            Console.WriteLine("Primeira planinha lida.");
+            try
+            {
+                List<LinhaGenerica> plan1 = LerPlanilha("planilha1.xlsx");
+                Console.WriteLine("Primeira planinha lida.");
 
-            List<LinhaGenerica> plan2 = LerPlanilha("planilha2.xlsx");
-            Console.WriteLine("Segunda planinha lida.");
+                List<LinhaGenerica> plan2 = LerPlanilha("planilha2.xlsx");
+                Console.WriteLine("Segunda planinha lida.");
 
-            List<LinhaGenerica> plan3 = LerPlanilha("planilha3.xlsx");
-            Console.WriteLine("Terceira planinha lida.");
+                List<LinhaGenerica> plan3 = LerPlanilha("planilha3.xlsx");
+                Console.WriteLine("Terceira planinha lida.");
 
-            List<LinhaGenerica> dadosMesclados = MesclarPlanilhas(new List<List<LinhaGenerica>> { plan1, plan2, plan3 });
-            Console.WriteLine("Dados mesclados com Sucesso.");
+                List<LinhaGenerica> dadosMesclados = MesclarPlanilhas(new List<List<LinhaGenerica>> { plan1, plan2, plan3 });
+                Console.WriteLine("Dados mesclados com Sucesso.");
 
-            // Definição de ordem das colunas na planilha final.
-            string[] colunasDesejadas = new[] { "Nome", "Email", "Cpf", "Endereço", "Empresa" };
-            Console.WriteLine("Definindo Cabeçalho da planilha final.");
+                // Definição de ordem das colunas na planilha final.
+                string[] colunasDesejadas = new[] { "Nome", "Email", "Cpf", "Endereço", "Empresa" };
+                Console.WriteLine("Definindo Cabeçalho da planilha final.");
 
-            Console.WriteLine("Gerando planilha final.");
-            GerarPlanilhaFinal(dadosMesclados, colunasDesejadas, "planilha4.xlsx");
-            Console.WriteLine("Planilha final gerada com sucesso.");
+                Console.WriteLine("Gerando planilha final.");
+                GerarPlanilhaFinal(dadosMesclados, colunasDesejadas, "planilha4.xlsx");
+                Console.WriteLine("Planilha final gerada com sucesso.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Erro no processo, mensagem: {ex.Message}{Environment.NewLine}StackTrace:{ex.StackTrace}");
+            }
         }
 
         private List<LinhaGenerica> LerPlanilha(string caminho)
@@ -50,7 +54,7 @@ namespace DataMerger.Services
 
             if (!rows.Any()) return lista;
 
-            // pegar o cabeçalho
+            // Pegar o cabeçalho
             List<string> header = rows.First().Cells().Select(c => c.GetString()).ToList();
 
             // percorrer linhas
@@ -60,11 +64,11 @@ namespace DataMerger.Services
                 string nome = row.Cell(1).GetString();
                 if (string.IsNullOrWhiteSpace(nome)) continue;
 
-                var linha = new LinhaGenerica { Nome = nome };
+                LinhaGenerica linha = new LinhaGenerica { Nome = nome };
 
                 for (int i = 0; i < header.Count; i++)
                 {
-                    //Atribrui o valor na linha referente à coluna)
+                    //Atribrui o valor na linha referente à coluna
                     linha.Colunas[header[i]] = row.Cell(i + 1).GetString();
                 }
 
@@ -77,11 +81,11 @@ namespace DataMerger.Services
 
         private List<LinhaGenerica> MesclarPlanilhas(List<List<LinhaGenerica>> planilhas)
         {
-            var dict = new Dictionary<string, LinhaGenerica>(StringComparer.OrdinalIgnoreCase);
+            Dictionary<string, LinhaGenerica> dict = new Dictionary<string, LinhaGenerica>(StringComparer.OrdinalIgnoreCase);
 
-            foreach (var plan in planilhas)
+            foreach (List<LinhaGenerica> plan in planilhas)
             {
-                foreach (var linha in plan)
+                foreach (LinhaGenerica linha in plan)
                 {
                     if (!dict.TryGetValue(linha.Nome, out var existente))
                     {
@@ -103,8 +107,8 @@ namespace DataMerger.Services
 
         private void GerarPlanilhaFinal(List<LinhaGenerica> dados, string[] colunasDesejadas, string caminhoSaida)
         {
-            using var wb = new XLWorkbook();
-            var ws = wb.Worksheets.Add("Consolidado");
+            using XLWorkbook wb = new XLWorkbook();
+            IXLWorksheet ws = wb.Worksheets.Add("Consolidado");
 
             // Cabeçalho
             for (int i = 0; i < colunasDesejadas.Length; i++)
