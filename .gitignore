@@ -1,0 +1,113 @@
+## Build Folders
+bin/
+obj/
+
+## Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## Rider IDE
+.idea/
+
+## Visual Studio Code
+.vscode/
+
+## NuGet
+*.nupkg
+packages/
+*.snupkg
+
+## Logs
+*.log
+
+## OS Files
+.DS_Store
+Thumbs.db
+
+## Rider / JetBrains
+.idea/
+*.iws
+*.iml
+*.ipr
+
+## Publish Output
+publish/
+
+## Temporary files
+*.tmp
+*.bak
+*.swp
+
+## Resharper
+_ReSharper*/
+*.DotSettings.user
+
+## Test results
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+
+## Others
+*.pdb
+*.mdb
+*.cache## Build Folders
+bin/
+obj/
+
+## Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## Rider IDE
+.idea/
+
+## Visual Studio Code
+.vscode/
+
+## NuGet
+*.nupkg
+packages/
+*.snupkg
+
+## Logs
+*.log
+
+## OS Files
+.DS_Store
+Thumbs.db
+
+## Rider / JetBrains
+.idea/
+*.iws
+*.iml
+*.ipr
+
+## Publish Output
+publish/
+
+## Temporary files
+*.tmp
+*.bak
+*.swp
+
+## Resharper
+_ReSharper*/
+*.DotSettings.user
+
+## Test results
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+
+## Others
+*.pdb
+*.mdb
+*.cache

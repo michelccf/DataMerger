@@ -1,0 +1,14 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace DataMerger.DTOs
+{
+    public class LinhaGenerica
+    {
+        public string Nome { get; set; } = string.Empty; // chave para cruzar os dados
+        public Dictionary<string, string> Colunas { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    }
+}
