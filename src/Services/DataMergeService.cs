@@ -40,7 +40,7 @@ namespace DataMerger.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Erro no processo, mensagem: {ex.Message}{Environment.NewLine}StackTrace:{ex.StackTrace}");
+                Console.WriteLine($"Erro no processo, mensagem: {ex.Message}{Environment.NewLine}StackTrace:{ex.StackTrace}{Environment.NewLine}");
             }
         }
 
