@@ -27,6 +27,8 @@ namespace DataMerger.Services
                 List<Empresa> emp = LerPlanilhaCnpj("CNPJS.xlsx");
                 Console.WriteLine("CNPJS.xlsx lida.");
 
+                plan1 = PreencherDadosAdicionais(plan1);
+
                 List<PlanilhaFinal> result = MontarResult(plan1, plan2, emp);
 
                 // Definição de ordem das colunas na planilha final.
@@ -45,6 +47,21 @@ namespace DataMerger.Services
 
         }
 
+        private List<LinhaGenerica> PreencherDadosAdicionais(List<LinhaGenerica> plan1)
+        {
+            foreach (var x in plan1.GroupBy(_ => _.Nome))
+            {
+                var p = plan1.FirstOrDefault(_ => _.Nome == x.Key);
+                p.QtdDependentes = x.Count();
+                if (p.QtdDependentes > 1)
+                {
+                    p.Total = x.SelectMany(_ => _.Colunas.Where(_ => _.Key == "Valor Participação")).Sum(_ => Convert.ToDecimal(_.Value)).ToString().Replace(".", ",");
+                }
+            }
+
+            return plan1;
+        }
+
         private List<PlanilhaFinal> MontarResult(List<LinhaGenerica> Dirf, List<LinhaGenerica> Cop, List<Empresa> emp)
         {
             List<PlanilhaFinal> result = new List<PlanilhaFinal>();
@@ -59,13 +76,14 @@ namespace DataMerger.Services
                 x.CPF_Beneficiario = d.Colunas.Where(_ => _.Key == "CPF Dependente").FirstOrDefault().Value;
                 x.Data_De_Nascimento_Beneficiario = d.Colunas.Where(_ => _.Key == "Data Nascimento Dependente").FirstOrDefault().Value;
                 x.Valor = d.Colunas.Where(_ => _.Key == "Valor Participação").FirstOrDefault().Value;
-                x.Valor_Total = string.Empty;
+                x.Valor_Total = Convert.ToDecimal(d.Total) > 0 ? d.Total : "";
                 x.Subfatura = Cop.Where(_ => _.Nome == x.Titular).FirstOrDefault().Colunas.Where(_ => _.Key == "NUMERO DA SUBFATURA").FirstOrDefault().Value;
                 x.Data_De_referencia = DateTime.Now.ToString(); // Onde pego?
                 x.NomeEmpresa = emp.Where(_ => _.Subfatura == Convert.ToInt32(x.Subfatura)).FirstOrDefault().Emp;
                 x.Cnpj_Prestador = string.Empty; // Onde pego?
                 x.Nome_Do_Prestador = string.Empty; // Onde pego?
                 x.Valor_reemboso_anos_anteriores = string.Empty; // Onde pego?
+                x.QtdDependentes = d.QtdDependentes;
                 result.Add(x);
             }
             return result;
@@ -170,6 +188,7 @@ namespace DataMerger.Services
                 ws.Cell(1, i + 1).Value = colunasDesejadas[i];
 
             int row = 2;
+
             foreach (var linha in dados)
             {
                 for (int i = 0; i < colunasDesejadas.Length; i++)
@@ -201,8 +220,15 @@ namespace DataMerger.Services
                             ws.Cell(row, i + 1).Value = linha.Valor;
                             break;
                         case 8:
-                            ws.Cell(row, i + 1).Value = linha.Valor_Total;
-                            break;
+                            if (linha.Valor_Total != string.Empty)
+                            {
+                                var ex = ws.Range(row, i + 1, (row + linha.QtdDependentes - 1), i + 1);
+                                ex.Merge();
+                                ex.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                                ex.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+                                ws.Cell(row, i + 1).Value = linha.Valor_Total;
+                            }
+                                break;
                         case 9:
                             ws.Cell(row, i + 1).Value = linha.Subfatura;
                             break;
@@ -227,9 +253,50 @@ namespace DataMerger.Services
                 row++;
             }
 
+            ws = AplicarEstilos(ws);
+
             ws.Columns().AdjustToContents();
             wb.SaveAs(caminhoSaida);
         }
 
+        private IXLWorksheet AplicarEstilos(IXLWorksheet ws)
+        {
+            int ultimaLinha = ws.LastRowUsed().RowNumber();
+            int ultimaColuna = ws.LastColumnUsed().ColumnNumber();
+
+            for (int r = 1; r <= ultimaLinha; r++)
+            {
+                for (int c = 1; c <= ultimaColuna; c++)
+                {
+
+                    var cell = ws.Cell(r, c);
+
+                    if (r == 1)
+                    {
+                        if (c >= 4)
+                        {
+                            cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                            cell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+                            cell.Style.Font.Bold = true;
+                            cell.Style.Fill.BackgroundColor = XLColor.FromHtml("#dcdcdc");
+                        }
+                    }
+
+                    cell.Style.Font.FontName = "Calibri";
+                    cell.Style.Font.FontSize = 11;
+
+                    cell.Style.Border.TopBorder = XLBorderStyleValues.Thin;
+                    cell.Style.Border.BottomBorder = XLBorderStyleValues.Thin;
+                    cell.Style.Border.LeftBorder = XLBorderStyleValues.Thin;
+                    cell.Style.Border.RightBorder = XLBorderStyleValues.Thin;
+
+                    cell.Style.Border.TopBorderColor = XLColor.Black;
+                    cell.Style.Border.BottomBorderColor = XLColor.Black;
+                    cell.Style.Border.LeftBorderColor = XLColor.Black;
+                    cell.Style.Border.RightBorderColor = XLColor.Black;
+                }
+            }
+            return ws;
+        }
     }
 }

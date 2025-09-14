@@ -23,5 +23,6 @@ namespace DataMerger.DTOs
         public string Cnpj_Prestador { get; set; }
         public string Nome_Do_Prestador { get; set; }
         public string Valor_reemboso_anos_anteriores { get; set; }
+        public int QtdDependentes { get; set; }
     }
 }
