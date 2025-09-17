@@ -92,7 +92,9 @@ namespace DataMerger.Services
                 x.Valor = d.Colunas.Where(_ => _.Key == "Valor Participação").FirstOrDefault().Value;
                 x.Valor_Total = Convert.ToDecimal(d.Total) > 0 ? d.Total : "";
                 x.Subfatura = cop?.Colunas.Where(_ => _.Key == "NUMERO DA SUBFATURA").FirstOrDefault().Value;
-                x.Data_De_referencia = DateTime.Now.ToString(); // Onde pego?
+
+                x.Data_De_referencia = $"01/{(DateTime.Now.Month -2).ToString().PadLeft(2, '0')}/{DateTime.Now.Year}"; 
+
                 x.NomeEmpresa = emp.Where(_ => _.Subfatura == Convert.ToInt32(x.Subfatura)).FirstOrDefault().Emp;
                 x.Cnpj_Prestador = emp.Where(_ => _.Subfatura == Convert.ToInt32(x.Subfatura)).FirstOrDefault().Cnpj; // Onde pego?
                 x.Valor_reemboso_anos_anteriores = string.Empty; // Onde pego?
