@@ -1,6 +1,7 @@
 ﻿using ClosedXML.Excel;
 using DataMerger.DTOs;
 using DataMerger.Interfaces;
+using DocumentFormat.OpenXml.Spreadsheet;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -32,7 +33,7 @@ namespace DataMerger.Services
                 List<PlanilhaFinal> result = MontarResult(plan1, plan2, emp);
 
                 // Definição de ordem das colunas na planilha final.
-                string[] colunasDesejadas = new[] { "Matricula", "Titular", "CPF Titular", "Data Nascimento Titular", "Nome do Beneficiario", "CPF Beneficiario", "Data de Nascimento Beneficiario", "Valor", "Valor total", "Subfatura", "Data de referencia", "Subfatura", "Cnpj prestador", "Nome do Prestador", "Valor reemboso anos anteriores" };
+                string[] colunasDesejadas = new[] { "Matricula", "Titular", "CPF Titular", "Data Nascimento Titular", "Nome do Beneficiario", "CPF Beneficiario", "Data de Nascimento Beneficiario", "Valor", "Valor total", "Subfatura", "Data de referencia", "Nome do Prestador", "Cnpj prestador", "Valor reemboso anos anteriores" };
                 Console.WriteLine("Definindo Cabeçalho da planilha final.");
 
                 Console.WriteLine("Gerando planilha final.");
@@ -67,23 +68,38 @@ namespace DataMerger.Services
             List<PlanilhaFinal> result = new List<PlanilhaFinal>();
             foreach (var d in Dirf)
             {
+                var cop = Cop.Where(_ => _.Nome == d.Nome)?.FirstOrDefault();
                 PlanilhaFinal x = new PlanilhaFinal();
-                x.Matricula = string.Empty; // Onde pego?
+                x.Matricula = cop?.Colunas.Where(_ => _.Key == "MATRICULA ESPECIAL")?.FirstOrDefault().Value ?? string.Empty; // Onde pego?
                 x.Titular = d.Nome;
                 x.CPF_Titular = d.Colunas.Where(_ => _.Key == "CPF Titular").FirstOrDefault().Value;
                 x.Data_Nascimento_Titular = string.Empty; // Onde pego?
                 x.Nome_Do_Beneficiario = d.Colunas.Where(_ => _.Key == "Nome Dependente").FirstOrDefault().Value;
+
+                if (x.Nome_Do_Beneficiario == string.Empty)
+                    x.Nome_Do_Beneficiario = x.Titular;
+
                 x.CPF_Beneficiario = d.Colunas.Where(_ => _.Key == "CPF Dependente").FirstOrDefault().Value;
+
+                if (x.CPF_Beneficiario == string.Empty)
+                    x.CPF_Beneficiario = x.CPF_Titular;
+
                 x.Data_De_Nascimento_Beneficiario = d.Colunas.Where(_ => _.Key == "Data Nascimento Dependente").FirstOrDefault().Value;
+
+                if (string.IsNullOrEmpty(x.Data_De_Nascimento_Beneficiario))
+                    x.Data_De_Nascimento_Beneficiario = x.Data_Nascimento_Titular;
+
                 x.Valor = d.Colunas.Where(_ => _.Key == "Valor Participação").FirstOrDefault().Value;
                 x.Valor_Total = Convert.ToDecimal(d.Total) > 0 ? d.Total : "";
-                x.Subfatura = Cop.Where(_ => _.Nome == x.Titular).FirstOrDefault().Colunas.Where(_ => _.Key == "NUMERO DA SUBFATURA").FirstOrDefault().Value;
+                x.Subfatura = cop?.Colunas.Where(_ => _.Key == "NUMERO DA SUBFATURA").FirstOrDefault().Value;
                 x.Data_De_referencia = DateTime.Now.ToString(); // Onde pego?
                 x.NomeEmpresa = emp.Where(_ => _.Subfatura == Convert.ToInt32(x.Subfatura)).FirstOrDefault().Emp;
-                x.Cnpj_Prestador = string.Empty; // Onde pego?
-                x.Nome_Do_Prestador = string.Empty; // Onde pego?
+                x.Cnpj_Prestador = emp.Where(_ => _.Subfatura == Convert.ToInt32(x.Subfatura)).FirstOrDefault().Cnpj; // Onde pego?
                 x.Valor_reemboso_anos_anteriores = string.Empty; // Onde pego?
                 x.QtdDependentes = d.QtdDependentes;
+
+                if (x.Matricula == null)
+                    x.Matricula = "";
                 result.Add(x);
             }
             return result;
@@ -131,7 +147,9 @@ namespace DataMerger.Services
                 for (int i = 0; i < header.Count; i++)
                 {
                     //Atribrui o valor na linha referente à coluna
+                   
                     linha.Colunas[header[i]] = row.Cell(i + 1).GetString();
+
                 }
 
                 lista.Add(linha);
@@ -189,6 +207,8 @@ namespace DataMerger.Services
 
             int row = 2;
 
+            dados = dados.OrderBy(_ => _.Subfatura).ThenBy(_ => _.Titular).ToList();
+
             foreach (var linha in dados)
             {
                 for (int i = 0; i < colunasDesejadas.Length; i++)
@@ -214,7 +234,17 @@ namespace DataMerger.Services
                             ws.Cell(row, i + 1).Value = linha.CPF_Beneficiario;
                             break;
                         case 6:
-                            ws.Cell(row, i + 1).Value = linha.Data_De_Nascimento_Beneficiario;
+
+                            if (!string.IsNullOrEmpty(linha.Data_De_Nascimento_Beneficiario) && !linha.Data_De_Nascimento_Beneficiario.Contains("/"))
+                            {
+                                DateTime baseDate = new DateTime(1900, 1, 1);
+                                DateTime dt = baseDate.AddDays(Convert.ToDouble(linha.Data_De_Nascimento_Beneficiario) - 2);
+
+                                ws.Cell(row, i + 1).Value = $"{dt.Day.ToString().PadLeft(2, '0')}/{dt.Month.ToString().PadLeft(2, '0')}/{dt.Year}";
+                            }
+                            else
+                                ws.Cell(row, i + 1).Value = linha.Data_De_Nascimento_Beneficiario;
+
                             break;
                         case 7:
                             ws.Cell(row, i + 1).Value = linha.Valor;
@@ -273,14 +303,12 @@ namespace DataMerger.Services
 
                     if (r == 1)
                     {
-                        if (c >= 4)
-                        {
-                            cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-                            cell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
-                            cell.Style.Font.Bold = true;
-                            cell.Style.Fill.BackgroundColor = XLColor.FromHtml("#dcdcdc");
-                        }
-                    }
+
+                        cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                        cell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+                        cell.Style.Font.Bold = true;
+                        cell.Style.Fill.BackgroundColor = XLColor.FromHtml("#dcdcdc");
+                    }                  
 
                     cell.Style.Font.FontName = "Calibri";
                     cell.Style.Font.FontSize = 11;

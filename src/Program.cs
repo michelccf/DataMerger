@@ -18,5 +18,6 @@ class Program
         // Resolver serviço e executar
         var service = host.Services.GetRequiredService<IDataMergeService>();
         await service.StartProcess();
+        Console.ReadKey();
     }
 }
