@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -28,6 +29,8 @@ namespace DataMerger.Services
                 List<Empresa> emp = LerPlanilhaCnpj("CNPJS.xlsx");
                 Console.WriteLine("CNPJS.xlsx lida.");
 
+                RemoverValoresZerados(plan1);
+
                 plan1 = PreencherDadosAdicionais(plan1);
 
                 List<PlanilhaFinal> result = MontarResult(plan1, plan2, emp);
@@ -48,6 +51,12 @@ namespace DataMerger.Services
 
         }
 
+        private void RemoverValoresZerados(List<LinhaGenerica> plan1)
+        {
+
+            plan1.RemoveAll(linha => linha.Colunas.TryGetValue("Valor Participação", out var valor) && valor == "0");
+        }
+
         private List<LinhaGenerica> PreencherDadosAdicionais(List<LinhaGenerica> plan1)
         {
             foreach (var x in plan1.GroupBy(_ => _.Nome))
@@ -66,6 +75,7 @@ namespace DataMerger.Services
         private List<PlanilhaFinal> MontarResult(List<LinhaGenerica> Dirf, List<LinhaGenerica> Cop, List<Empresa> emp)
         {
             List<PlanilhaFinal> result = new List<PlanilhaFinal>();
+
             foreach (var d in Dirf)
             {
                 var cop = Cop.Where(_ => _.Nome == d.Nome)?.FirstOrDefault();
@@ -90,6 +100,12 @@ namespace DataMerger.Services
                     x.Data_De_Nascimento_Beneficiario = x.Data_Nascimento_Titular;
 
                 x.Valor = d.Colunas.Where(_ => _.Key == "Valor Participação").FirstOrDefault().Value;
+
+                if (x.Valor == "0")
+                {
+                    x.Valor = string.Empty;
+                }
+
                 x.Valor_Total = Convert.ToDecimal(d.Total) > 0 ? d.Total : "";
                 x.Subfatura = cop?.Colunas.Where(_ => _.Key == "NUMERO DA SUBFATURA").FirstOrDefault().Value;
 
