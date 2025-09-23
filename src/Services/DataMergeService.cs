@@ -26,6 +26,12 @@ namespace DataMerger.Services
                 List<LinhaGenerica> plan2 = LerPlanilha("COPARTICIPAÇAO.xlsx");
                 Console.WriteLine("OPARTICIPAÇAO.xlsx lida.");
 
+                List<LinhaGenerica> plan3 = LerPlanilha("SAUDE.xlsx");
+                Console.WriteLine("SAUDE.xlsx lida.");
+
+                List<LinhaGenerica> plan4 = LerPlanilha("DENTAL.xlsx");
+                Console.WriteLine("DENTAL.xlsx lida.");
+
                 List<Empresa> emp = LerPlanilhaCnpj("CNPJS.xlsx");
                 Console.WriteLine("CNPJS.xlsx lida.");
 
@@ -35,13 +41,20 @@ namespace DataMerger.Services
 
                 List<PlanilhaFinal> result = MontarResult(plan1, plan2, emp);
 
+                List<PlanilhaFinalSaude> resultSaude = MontarResultSaude(plan3, plan4, emp, plan1);
+
                 // Definição de ordem das colunas na planilha final.
                 string[] colunasDesejadas = new[] { "Matricula", "Titular", "CPF Titular", "Data Nascimento Titular", "Nome do Beneficiario", "CPF Beneficiario", "Data de Nascimento Beneficiario", "Valor", "Valor total", "Subfatura", "Data de referencia", "Nome do Prestador", "Cnpj prestador", "Valor reemboso anos anteriores" };
+                string[] colunasDesejadasSaude = new[] { "DATA DE LANCAMENTO", "EMPRESA", "SUB FATURA", "CPF DO BENEFICIARIO", "MATRICULA ESPECIAL", "NUMERO DO CERTIFICADO", "NOME SEGURADO/DEPENDENTE", "DATA DE NASCIMENTO", "IDADE", "CODIGO DO SEXO", "ESTADO CIVIL", "COD. GRAU PARENT.DEP.", "TITULAR OU DEPENDENTE", "CODIGO DO PLANO", "VALOR DO LANCAMENTO", "DATA INICIO VIGENCIA", "DATA DE CANCELAMENTO", "TIPO DE LANÇAMENTO", "DATA TRANSFERENCIA DE SUBFATURA", "CARGO / OCUPACAO" };
                 Console.WriteLine("Definindo Cabeçalho da planilha final.");
 
                 Console.WriteLine("Gerando planilha final.");
                 GerarPlanilhaFinal(result, colunasDesejadas, $"Planilha Coparticipacao {DateTime.Now.Month}.{DateTime.Now.Year}.xlsx");
                 Console.WriteLine("Planilha final gerada com sucesso.");
+
+                Console.WriteLine("Gerando planilha final Saude.");
+                GerarPlanilhaFinalSaude(resultSaude, colunasDesejadasSaude, $"SAUDE - FATURA TECNICA {DateTime.Now.Month}.{DateTime.Now.Year}.xlsx");
+                Console.WriteLine("Planilha final Saude gerada com sucesso.");
             }
             catch (Exception ex)
             {
@@ -49,6 +62,176 @@ namespace DataMerger.Services
                 Console.ReadLine();
             }
 
+        }
+
+        private void GerarPlanilhaFinalSaude(List<PlanilhaFinalSaude> resultSaude, string[] colunasDesejadas, string caminhoSaida)
+        {
+            using XLWorkbook wb = new XLWorkbook();
+            IXLWorksheet ws = wb.Worksheets.Add("Consolidado");
+
+            // Cabeçalho
+            for (int i = 0; i < colunasDesejadas.Length; i++)
+                ws.Cell(1, i + 1).Value = colunasDesejadas[i];
+
+            int row = 2;
+
+            foreach (var linha in resultSaude)
+            {
+                for (int i = 0; i < colunasDesejadas.Length; i++)
+                {
+                    switch (i)
+                    {
+                        case 0:
+                            ws.Cell(row, i + 1).Value = linha.DataLancamento;
+                            break;
+                        case 1:
+                            ws.Cell(row, i + 1).Value = linha.Empresa;
+                            break;
+                        case 2:
+                            ws.Cell(row, i + 1).Value = linha.Subfatura;
+                            break;
+                        case 3:
+                            ws.Cell(row, i + 1).Value = linha.CpfBeneficiario;
+                            break;
+                        case 4:
+                            ws.Cell(row, i + 1).Value = linha.Matricula;
+                            break;
+                        case 5:
+                            ws.Cell(row, i + 1).Value = linha.NumeroCertificado;
+                            break;
+                        case 6:
+                                ws.Cell(row, i + 1).Value = linha.NomeDependente;
+                            break;
+                        case 7:
+                            ws.Cell(row, i + 1).Value = linha.DataNascimento;
+                            break;
+                        case 8:
+                                ws.Cell(row, i + 1).Value = linha.Idade;
+                            break;
+                        case 9:
+                            ws.Cell(row, i + 1).Value = linha.Sexo;
+                            break;
+                        case 10:
+                            ws.Cell(row, i + 1).Value = linha.EstadoCivil;
+                            break;
+                        case 11:
+                            ws.Cell(row, i + 1).Value = linha.GrauParentesco;
+                            break;
+                        case 12:
+                            ws.Cell(row, i + 1).Value = linha.TitularDependente;
+                            break;
+                        case 13:
+                            ws.Cell(row, i + 1).Value = linha.CodigoPlano;
+                            break;
+                        case 14:
+                            ws.Cell(row, i + 1).Value = linha.ValorLancamento;
+                            break;
+                        case 15:
+                            ws.Cell(row, i + 1).Value = linha.DataVigencia;
+                            break;
+                        case 16:
+                            ws.Cell(row, i + 1).Value = linha.DataCancelamento;
+                            break;
+                        case 17:
+                            ws.Cell(row, i + 1).Value = linha.TipoLancamento;
+                            break;
+                        case 18:
+                            ws.Cell(row, i + 1).Value = linha.DataTransferenciaSubfatura;
+                            break;
+                        case 19:
+                            ws.Cell(row, i + 1).Value = linha.Cargo;
+                            break;
+                    }
+
+                }
+                row++;
+            }
+
+            ws = AplicarEstilos(ws);
+
+            ws.Columns().AdjustToContents();
+            wb.SaveAs(caminhoSaida);
+        }
+
+        private List<PlanilhaFinalSaude> MontarResultSaude(List<LinhaGenerica> Saude, List<LinhaGenerica> Dental, List<Empresa> Empresas, List<LinhaGenerica> Dirf)
+        {
+            List<PlanilhaFinalSaude> resultSaude = new List<PlanilhaFinalSaude>();
+
+            Saude.RemoveAll(_ => _.Colunas["TIPO DO REGISTRO"] != "3" || _.Colunas["DATA DE NASCIMENTO"] == "00/00/0000");
+
+            foreach (var s in Saude)
+            {
+
+
+                var d = Dirf.Where(_ => _.Nome == s.Nome && _.Colunas.Where(_ => _.Key == "Nome Segurado Titular").FirstOrDefault().Value == s.Nome).FirstOrDefault();
+                PlanilhaFinalSaude x = new PlanilhaFinalSaude();
+                x.DataLancamento = $"{DateTime.Now.Month}/{DateTime.Now.Year}";
+                x.Subfatura = Empresas.Where(_ => _.Subfatura == Convert.ToInt32(s.Colunas.Where(_ => _.Key == "NUMERO DA SUBFATURA").FirstOrDefault().Value)).FirstOrDefault().Subfatura;
+                x.Empresa = Empresas?.Where(_ => _.Subfatura == x.Subfatura).FirstOrDefault().Emp;
+                x.CpfBeneficiario = d?.Colunas["CPF Titular"];
+                x.Matricula = s.Colunas["MATRICULA ESPECIAL"];
+                x.NumeroCertificado = s.Colunas["NUMERO DO CERTIFICADO"];
+                x.NomeDependente = s.Nome;
+                x.DataNascimento = s.Colunas["DATA DE NASCIMENTO"];
+                x.Idade = "0";
+                x.Sexo = ConverterSexo(Convert.ToInt32(s.Colunas["CODIGO DO SEXO"]));
+                x.EstadoCivil = ConverterEstadoCivil(Convert.ToInt32(s.Colunas["ESTADO CIVIL"]));
+                x.GrauParentesco = ConverterGrauParentesco(Convert.ToInt32(s.Colunas["COD. GRAU PARENT.DEP."]));
+                x.TitularDependente = ConverterTirular(Convert.ToInt32(s.Colunas["COD. GRAU PARENT.DEP."]));
+                x.CodigoPlano = s.Colunas["CODIGO DO PLANO"];
+                x.DataVigencia = s.Colunas["DATA INICIO VIGENCIA"];
+                x.DataCancelamento = string.Empty;
+                x.TipoLancamento = s.Colunas["TIPO DE LANÇAMENTO"];
+                x.DataTransferenciaSubfatura = string.Empty;
+                x.Cargo = s.Colunas["CARGO / OCUPACAO"];
+                resultSaude.Add(x);
+            }
+
+            return resultSaude;
+        }
+
+        private string ConverterTirular(int Codigo)
+        {
+            return Codigo == 0 ? "TITULAR" : "DEPENDENTE";
+        }
+
+        private string ConverterGrauParentesco(int Codigo)
+        {
+            switch (Codigo)
+            {
+                case 0:
+                    return "TITULAR";
+                case 1:
+                    return "CONJUGE";
+                case 2:
+                    return "FILHO(a)";
+                case 3:
+                    return "OUTROS";
+                default:
+                    return "TITULAR";
+            }
+        }
+
+        private string ConverterEstadoCivil(int Codigo)
+        {
+            switch (Codigo)
+            {
+                case 1:
+                    return "SOLTEIRO";
+                case 2:
+                    return "CASADO";
+                case 3:
+                    return "VIUVO";
+                case 4:
+                    return "SEPARADO/DIVORCIADO";
+                default:
+                    return "SOLTEIRO";
+            }
+        }
+
+        private string ConverterSexo(int Codigo)
+        {
+            return Codigo == 1 ? "MASCULINO" : "FEMININO";
         }
 
         private void RemoverValoresZerados(List<LinhaGenerica> plan1)
@@ -133,19 +316,33 @@ namespace DataMerger.Services
 
             if (!rows.Any()) return lista;
 
-            
+            bool isDirf = caminho == "DIRF.xlsx";
+            bool isCopart = caminho == "COPARTICIPAÇAO.xlsx";
+            bool isSaude = caminho == "SAUDE.xlsx";
+            bool isDental = caminho == "DENTAL.xlsx";
 
             int skip = 0;
             int columnNome = 0;
 
-            if (caminho == "DIRF.xlsx")
+            if (isDirf)
             {
                 skip = 3;
                 columnNome = 3;
             }
-            if (caminho == "COPARTICIPAÇAO.xlsx")
+            if (isCopart)
             {
                 skip = 3;
+                columnNome = 5;
+            }
+            if (isSaude)
+            {
+                skip = 5;
+                columnNome = 5;
+
+            }
+            if (isDental)
+            {
+                skip = 5;
                 columnNome = 5;
             }
             // Pegar o cabeçalho
@@ -165,7 +362,6 @@ namespace DataMerger.Services
                 for (int i = 0; i < header.Count; i++)
                 {
                     //Atribrui o valor na linha referente à coluna
-                   
                     linha.Colunas[header[i]] = row.Cell(i + 1).GetString();
 
                 }
@@ -252,17 +448,11 @@ namespace DataMerger.Services
                             ws.Cell(row, i + 1).Value = linha.CPF_Beneficiario;
                             break;
                         case 6:
-
                             if (!string.IsNullOrEmpty(linha.Data_De_Nascimento_Beneficiario) && !linha.Data_De_Nascimento_Beneficiario.Contains("/"))
-                            {
-                                DateTime baseDate = new DateTime(1900, 1, 1);
-                                DateTime dt = baseDate.AddDays(Convert.ToDouble(linha.Data_De_Nascimento_Beneficiario) - 2);
-
-                                ws.Cell(row, i + 1).Value = $"{dt.Day.ToString().PadLeft(2, '0')}/{dt.Month.ToString().PadLeft(2, '0')}/{dt.Year}";
-                            }
+                                ws.Cell(row, i + 1).Value = GerarData(linha.Data_De_Nascimento_Beneficiario); 
+                            
                             else
                                 ws.Cell(row, i + 1).Value = linha.Data_De_Nascimento_Beneficiario;
-
                             break;
                         case 7:
                             ws.Cell(row, i + 1).Value = linha.Valor;
@@ -305,6 +495,13 @@ namespace DataMerger.Services
 
             ws.Columns().AdjustToContents();
             wb.SaveAs(caminhoSaida);
+        }
+
+        private XLCellValue GerarData(string Data)
+        {
+            DateTime baseDate = new DateTime(1900, 1, 1);
+            DateTime dt = baseDate.AddDays(Convert.ToDouble(Data) - 2);
+            return $"{dt.Day.ToString().PadLeft(2, '0')}/{dt.Month.ToString().PadLeft(2, '0')}/{dt.Year}";
         }
 
         private IXLWorksheet AplicarEstilos(IXLWorksheet ws)
