@@ -21,7 +21,7 @@ namespace DataMerger.Services
         {
             try
             {
-                Console.WriteLine($"Digite 1 para Coparticipação, 2 para Saude e 3 para Dental:{Environment.NewLine}");
+                Console.WriteLine($"Digite:{Environment.NewLine}1 - Coparticipação{Environment.NewLine}2 - Saude{Environment.NewLine}3 - Dental{Environment.NewLine}");
                 var key = Console.ReadKey(intercept: true);
 
                 if (key.KeyChar == '1')
