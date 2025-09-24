@@ -1,6 +1,7 @@
 ﻿using ClosedXML.Excel;
 using DataMerger.DTOs;
 using DataMerger.Interfaces;
+using DocumentFormat.OpenXml.Office2010.ExcelAc;
 using DocumentFormat.OpenXml.Spreadsheet;
 using System;
 using System.Collections.Generic;
@@ -39,7 +40,7 @@ namespace DataMerger.Services
 
                 plan1 = PreencherDadosAdicionais(plan1);
 
-                List<PlanilhaFinal> result = MontarResult(plan1, plan2, emp);
+                List<PlanilhaFinal> result = MontarResult(plan1, plan2, emp, plan3);
 
                 List<PlanilhaFinalSaude> resultSaude = MontarResultSaude(plan3, plan4, emp, plan1);
 
@@ -157,6 +158,14 @@ namespace DataMerger.Services
         {
             List<PlanilhaFinalSaude> resultSaude = new List<PlanilhaFinalSaude>();
 
+            Saude.RemoveAll(linha => !Dirf.Any(linha2 =>
+            linha.Colunas.TryGetValue("NOME SEGURADO/DEPENDENTE", out var nomeSeguradoDependente) &&
+            linha2.Colunas.TryGetValue("Nome Dependente", out var nomeDependente) &&
+            string.Equals(nomeSeguradoDependente, nomeDependente, StringComparison.OrdinalIgnoreCase) ||
+            linha.Colunas.TryGetValue("NOME SEGURADO/DEPENDENTE", out var nomeTitular) &&
+            linha2.Colunas.TryGetValue("Nome Segurado Titular", out var Titular) &&
+            string.Equals(nomeTitular, Titular, StringComparison.OrdinalIgnoreCase)));
+
             Saude.RemoveAll(_ => _.Colunas["TIPO DO REGISTRO"] != "3" || _.Colunas["DATA DE NASCIMENTO"] == "00/00/0000");
 
             foreach (var s in Saude)
@@ -173,7 +182,7 @@ namespace DataMerger.Services
                 x.NumeroCertificado = s.Colunas["NUMERO DO CERTIFICADO"];
                 x.NomeDependente = s.Nome;
                 x.DataNascimento = s.Colunas["DATA DE NASCIMENTO"];
-                x.Idade = "0";
+                x.Idade = CalcularIdade(Convert.ToDateTime(x.DataNascimento)).ToString();
                 x.Sexo = ConverterSexo(Convert.ToInt32(s.Colunas["CODIGO DO SEXO"]));
                 x.EstadoCivil = ConverterEstadoCivil(Convert.ToInt32(s.Colunas["ESTADO CIVIL"]));
                 x.GrauParentesco = ConverterGrauParentesco(Convert.ToInt32(s.Colunas["COD. GRAU PARENT.DEP."]));
@@ -184,10 +193,24 @@ namespace DataMerger.Services
                 x.TipoLancamento = s.Colunas["TIPO DE LANÇAMENTO"];
                 x.DataTransferenciaSubfatura = string.Empty;
                 x.Cargo = s.Colunas["CARGO / OCUPACAO"];
+                x.ValorLancamento = s.Colunas["VALOR DO LANCAMENTO"];
                 resultSaude.Add(x);
             }
 
             return resultSaude;
+        }
+
+        public int CalcularIdade(DateTime dataNascimento)
+        {
+            var idade = DateTime.Now.Year - dataNascimento.Year;
+
+            // Ajusta a idade se a data de hoje ainda não atingiu o aniversário neste ano
+            if (DateTime.Now < dataNascimento.AddYears(idade))
+            {
+                idade--;
+            }
+
+            return idade;
         }
 
         private string ConverterTirular(int Codigo)
@@ -255,7 +278,7 @@ namespace DataMerger.Services
             return plan1;
         }
 
-        private List<PlanilhaFinal> MontarResult(List<LinhaGenerica> Dirf, List<LinhaGenerica> Cop, List<Empresa> emp)
+        private List<PlanilhaFinal> MontarResult(List<LinhaGenerica> Dirf, List<LinhaGenerica> Cop, List<Empresa> emp, List<LinhaGenerica> Saude)
         {
             List<PlanilhaFinal> result = new List<PlanilhaFinal>();
 
@@ -266,11 +289,12 @@ namespace DataMerger.Services
                 x.Matricula = cop?.Colunas.Where(_ => _.Key == "MATRICULA ESPECIAL")?.FirstOrDefault().Value ?? string.Empty; // Onde pego?
                 x.Titular = d.Nome;
                 x.CPF_Titular = d.Colunas.Where(_ => _.Key == "CPF Titular").FirstOrDefault().Value;
-                x.Data_Nascimento_Titular = string.Empty; // Onde pego?
                 x.Nome_Do_Beneficiario = d.Colunas.Where(_ => _.Key == "Nome Dependente").FirstOrDefault().Value;
 
                 if (x.Nome_Do_Beneficiario == string.Empty)
                     x.Nome_Do_Beneficiario = x.Titular;
+
+                x.Data_Nascimento_Titular = Saude?.Where(_ => _.Colunas["NOME SEGURADO/DEPENDENTE"] == x.Titular || _.Colunas["NOME SEGURADO/DEPENDENTE"] == x.Nome_Do_Beneficiario)?.FirstOrDefault()?.Colunas["DATA DE NASCIMENTO"];
 
                 x.CPF_Beneficiario = d.Colunas.Where(_ => _.Key == "CPF Dependente").FirstOrDefault().Value;
 
