@@ -1,6 +1,7 @@
 ﻿using ClosedXML.Excel;
 using DataMerger.DTOs;
 using DataMerger.Interfaces;
+using DocumentFormat.OpenXml.Drawing.Diagrams;
 using DocumentFormat.OpenXml.Office2010.ExcelAc;
 using DocumentFormat.OpenXml.Spreadsheet;
 using System;
@@ -106,8 +107,16 @@ namespace DataMerger.Services
                     StartProcess();
                 }
 
+                Console.WriteLine($"{Environment.NewLine}{Environment.NewLine}");
+                Console.WriteLine("Deseja gera mais alguma planilha?");
+                Console.WriteLine($"Digite:{Environment.NewLine}1 - Sim{Environment.NewLine}2 - Não");
+                var key2 = Console.ReadKey(intercept: true);
 
-
+                if (key2.KeyChar == '1')
+                {
+                    Console.WriteLine($"{Environment.NewLine}{Environment.NewLine}{Environment.NewLine}");
+                    StartProcess();
+                }
             }
             catch (Exception ex)
             {
@@ -159,7 +168,7 @@ namespace DataMerger.Services
                             ws.Cell(row, i + 1).Value = linha.DataNascimento;
                             break;
                         case 8:
-                                ws.Cell(row, i + 1).Value = linha.Idade;
+                            ws.Cell(row, i + 1).Value = linha.Idade;
                             break;
                         case 9:
                             ws.Cell(row, i + 1).Value = linha.Sexo;
@@ -572,7 +581,7 @@ namespace DataMerger.Services
                                 ws.Cell(row, i + 1).Value = GerarData(linha.Data_De_Nascimento_Beneficiario); 
                             
                             else
-                                ws.Cell(row, i + 1).Value = linha.Data_De_Nascimento_Beneficiario;
+                                ws.Cell(row, i + 1).Value = TratarData(linha.Data_De_Nascimento_Beneficiario);
                             break;
                         case 7:
                             ws.Cell(row, i + 1).Value = linha.Valor;
@@ -615,6 +624,15 @@ namespace DataMerger.Services
 
             ws.Columns().AdjustToContents();
             wb.SaveAs(caminhoSaida);
+        }
+
+        private XLCellValue TratarData(string data_De_Nascimento_Beneficiario)
+        {
+            if (!string.IsNullOrEmpty(data_De_Nascimento_Beneficiario) && data_De_Nascimento_Beneficiario.Contains('/'))
+                return data_De_Nascimento_Beneficiario.Substring(0, 10);
+            else
+                return data_De_Nascimento_Beneficiario;
+
         }
 
         private XLCellValue GerarData(string Data)
