@@ -21,41 +21,93 @@ namespace DataMerger.Services
         {
             try
             {
-                List<LinhaGenerica> plan1 = LerPlanilha("DIRF.xlsx");
-                Console.WriteLine("DIRF.xlsx lida.");
+                Console.WriteLine($"Digite 1 para Coparticipação, 2 para Saude e 3 para Dental:{Environment.NewLine}");
+                var key = Console.ReadKey(intercept: true);
 
-                List<LinhaGenerica> plan2 = LerPlanilha("COPARTICIPAÇAO.xlsx");
-                Console.WriteLine("OPARTICIPAÇAO.xlsx lida.");
+                if (key.KeyChar == '1')
+                {
+                    List<LinhaGenerica> plan1 = LerPlanilha("DIRF.xlsx");
+                    Console.WriteLine("DIRF.xlsx lida.");
 
-                List<LinhaGenerica> plan3 = LerPlanilha("SAUDE.xlsx");
-                Console.WriteLine("SAUDE.xlsx lida.");
+                    List<LinhaGenerica> plan2 = LerPlanilha("COPARTICIPAÇAO.xlsx");
+                    Console.WriteLine("COPARTICIPAÇAO.xlsx lida.");
 
-                List<LinhaGenerica> plan4 = LerPlanilha("DENTAL.xlsx");
-                Console.WriteLine("DENTAL.xlsx lida.");
+                    List<LinhaGenerica> plan3 = LerPlanilha("SAUDE.xlsx");
+                    Console.WriteLine("SAUDE.xlsx lida.");
 
-                List<Empresa> emp = LerPlanilhaCnpj("CNPJS.xlsx");
-                Console.WriteLine("CNPJS.xlsx lida.");
+                    List<Empresa> emp = LerPlanilhaCnpj("CNPJS.xlsx");
+                    Console.WriteLine("CNPJS.xlsx lida.");
 
-                RemoverValoresZerados(plan1);
+                    RemoverValoresZerados(plan1);
 
-                plan1 = PreencherDadosAdicionais(plan1);
+                    plan1 = PreencherDadosAdicionais(plan1);
 
-                List<PlanilhaFinal> result = MontarResult(plan1, plan2, emp, plan3);
+                    List<PlanilhaFinal> result = MontarResult(plan1, plan2, emp, plan3);
+                    Console.WriteLine("Definindo Cabeçalho da planilha final.");
+                    string[] colunasDesejadas = new[] { "Matricula", "Titular", "CPF Titular", "Data Nascimento Titular", "Nome do Beneficiario", "CPF Beneficiario", "Data de Nascimento Beneficiario", "Valor", "Valor total", "Subfatura", "Data de referencia", "Nome do Prestador", "Cnpj prestador", "Valor reemboso anos anteriores" };
 
-                List<PlanilhaFinalSaude> resultSaude = MontarResultSaude(plan3, plan4, emp, plan1);
+                    Console.WriteLine("Gerando planilha final.");
+                    GerarPlanilhaFinal(result, colunasDesejadas, $"Planilha Coparticipacao {DateTime.Now.Month}.{DateTime.Now.Year}.xlsx");
+                    Console.WriteLine("Planilha final gerada com sucesso.");
+                }
 
-                // Definição de ordem das colunas na planilha final.
-                string[] colunasDesejadas = new[] { "Matricula", "Titular", "CPF Titular", "Data Nascimento Titular", "Nome do Beneficiario", "CPF Beneficiario", "Data de Nascimento Beneficiario", "Valor", "Valor total", "Subfatura", "Data de referencia", "Nome do Prestador", "Cnpj prestador", "Valor reemboso anos anteriores" };
-                string[] colunasDesejadasSaude = new[] { "DATA DE LANCAMENTO", "EMPRESA", "SUB FATURA", "CPF DO BENEFICIARIO", "MATRICULA ESPECIAL", "NUMERO DO CERTIFICADO", "NOME SEGURADO/DEPENDENTE", "DATA DE NASCIMENTO", "IDADE", "CODIGO DO SEXO", "ESTADO CIVIL", "COD. GRAU PARENT.DEP.", "TITULAR OU DEPENDENTE", "CODIGO DO PLANO", "VALOR DO LANCAMENTO", "DATA INICIO VIGENCIA", "DATA DE CANCELAMENTO", "TIPO DE LANÇAMENTO", "DATA TRANSFERENCIA DE SUBFATURA", "CARGO / OCUPACAO" };
-                Console.WriteLine("Definindo Cabeçalho da planilha final.");
+                if (key.KeyChar == '2') 
+                {
 
-                Console.WriteLine("Gerando planilha final.");
-                GerarPlanilhaFinal(result, colunasDesejadas, $"Planilha Coparticipacao {DateTime.Now.Month}.{DateTime.Now.Year}.xlsx");
-                Console.WriteLine("Planilha final gerada com sucesso.");
+                    List<LinhaGenerica> plan1 = LerPlanilha("DIRF.xlsx");
+                    Console.WriteLine("DIRF.xlsx lida.");
 
-                Console.WriteLine("Gerando planilha final Saude.");
-                GerarPlanilhaFinalSaude(resultSaude, colunasDesejadasSaude, $"SAUDE - FATURA TECNICA {DateTime.Now.Month}.{DateTime.Now.Year}.xlsx");
-                Console.WriteLine("Planilha final Saude gerada com sucesso.");
+                    List<LinhaGenerica> plan4 = LerPlanilha("DENTAL.xlsx");
+                    Console.WriteLine("DENTAL.xlsx lida.");
+
+                    List<LinhaGenerica> plan3 = LerPlanilha("SAUDE.xlsx");
+                    Console.WriteLine("SAUDE.xlsx lida.");
+
+                    List<Empresa> emp = LerPlanilhaCnpj("CNPJS.xlsx");
+                    Console.WriteLine("CNPJS.xlsx lida.");
+
+                    List<PlanilhaFinalSaude> resultSaude = MontarResultSaude(plan3, plan4, emp, plan1);
+
+                    string[] colunasDesejadasSaude = new[] { "DATA DE LANCAMENTO", "EMPRESA", "SUB FATURA", "CPF DO BENEFICIARIO", "MATRICULA ESPECIAL", "NUMERO DO CERTIFICADO", "NOME SEGURADO/DEPENDENTE", "DATA DE NASCIMENTO", "IDADE", "CODIGO DO SEXO", "ESTADO CIVIL", "COD. GRAU PARENT.DEP.", "TITULAR OU DEPENDENTE", "CODIGO DO PLANO", "VALOR DO LANCAMENTO", "DATA INICIO VIGENCIA", "DATA DE CANCELAMENTO", "TIPO DE LANÇAMENTO", "DATA TRANSFERENCIA DE SUBFATURA", "CARGO / OCUPACAO" };
+                    Console.WriteLine("Definindo Cabeçalho da planilha final.");
+
+                    Console.WriteLine("Gerando planilha final Saude.");
+                    GerarPlanilhaFinalSaude(resultSaude, colunasDesejadasSaude, $"SAUDE - FATURA TECNICA {DateTime.Now.Month}.{DateTime.Now.Year}.xlsx");
+                    Console.WriteLine("Planilha final Saude gerada com sucesso.");
+                }
+
+                if (key.KeyChar == '3')
+                {
+                    List<LinhaGenerica> plan1 = LerPlanilha("DIRF.xlsx");
+                    Console.WriteLine("DIRF.xlsx lida.");
+
+                    List<LinhaGenerica> plan4 = LerPlanilha("DENTAL.xlsx");
+                    Console.WriteLine("DENTAL.xlsx lida.");
+
+                    List<LinhaGenerica> plan3 = LerPlanilha("SAUDE.xlsx");
+                    Console.WriteLine("SAUDE.xlsx lida.");
+
+                    List<Empresa> emp = LerPlanilhaCnpj("CNPJS.xlsx");
+                    Console.WriteLine("CNPJS.xlsx lida.");
+
+                    List<PlanilhaFinalSaude> resultDental = MontarResultDental(plan3, plan4, emp, plan1);
+
+                    string[] colunasDesejadasSaude = new[] { "DATA DE LANCAMENTO", "EMPRESA", "SUB FATURA", "CPF DO BENEFICIARIO", "MATRICULA ESPECIAL", "NUMERO DO CERTIFICADO", "NOME SEGURADO/DEPENDENTE", "DATA DE NASCIMENTO", "IDADE", "CODIGO DO SEXO", "ESTADO CIVIL", "COD. GRAU PARENT.DEP.", "TITULAR OU DEPENDENTE", "CODIGO DO PLANO", "VALOR DO LANCAMENTO", "DATA INICIO VIGENCIA", "DATA DE CANCELAMENTO", "TIPO DE LANÇAMENTO", "DATA TRANSFERENCIA DE SUBFATURA", "CARGO / OCUPACAO" };
+                    Console.WriteLine("Definindo Cabeçalho da planilha final.");
+
+                    Console.WriteLine("Gerando planilha final Dental.");
+                    GerarPlanilhaFinalSaude(resultDental, colunasDesejadasSaude, $"DENTAL - FATURA TECNICA {DateTime.Now.Month}.{DateTime.Now.Year}.xlsx");
+                    Console.WriteLine("Planilha final Dental gerada com sucesso.");
+                }
+
+                else if (key.KeyChar != '2' && key.KeyChar != '1')
+                {
+                    Console.WriteLine("Tecla digitada não corresponde as opções 1 e 2.");
+                    StartProcess();
+                }
+
+
+
             }
             catch (Exception ex)
             {
@@ -154,17 +206,61 @@ namespace DataMerger.Services
             wb.SaveAs(caminhoSaida);
         }
 
+        private List<PlanilhaFinalSaude> MontarResultDental(List<LinhaGenerica> Saude, List<LinhaGenerica> Dental, List<Empresa> Empresas, List<LinhaGenerica> Dirf)
+        {
+            List<PlanilhaFinalSaude> resultSaude = new List<PlanilhaFinalSaude>();
+
+            //Saude.RemoveAll(linha => !Dirf.Any(linha2 =>
+            //linha.Colunas.TryGetValue("NOME SEGURADO/DEPENDENTE", out var nomeSeguradoDependente) &&
+            //linha2.Colunas.TryGetValue("Nome Dependente", out var nomeDependente) &&
+            //string.Equals(nomeSeguradoDependente, nomeDependente, StringComparison.OrdinalIgnoreCase) ||
+            //linha.Colunas.TryGetValue("NOME SEGURADO/DEPENDENTE", out var nomeTitular) &&
+            //linha2.Colunas.TryGetValue("Nome Segurado Titular", out var Titular) &&
+            //string.Equals(nomeTitular, Titular, StringComparison.OrdinalIgnoreCase)));
+
+            Dental.RemoveAll(_ => _.Colunas["TIPO DO REGISTRO"] != "3" || _.Colunas["DATA DE NASCIMENTO"] == "00/00/0000");
+
+            foreach (var d in Dental)
+            {
+                var dirf = Dirf.Where(_ => _.Nome == d.Nome && _.Colunas.Where(_ => _.Key == "Nome Segurado Titular").FirstOrDefault().Value == d.Nome).FirstOrDefault();
+                PlanilhaFinalSaude x = new PlanilhaFinalSaude();
+                x.DataLancamento = d.Colunas["DATA DE LANCAMENTO"];
+                x.Subfatura = Empresas.Where(_ => _.Subfatura == Convert.ToInt32(d.Colunas.Where(_ => _.Key == "NUMERO DA SUBFATURA").FirstOrDefault().Value)).FirstOrDefault().Subfatura;
+                x.Empresa = Empresas?.Where(_ => _.Subfatura == x.Subfatura).FirstOrDefault().Emp;
+                x.CpfBeneficiario = dirf?.Colunas["CPF Titular"];
+                x.Matricula = d.Colunas["MATRICULA ESPECIAL"];
+                x.NumeroCertificado = d.Colunas["NUMERO DO CERTIFICADO"];
+                x.NomeDependente = d.Nome;
+                x.DataNascimento = d.Colunas["DATA DE NASCIMENTO"];
+                x.Idade = CalcularIdade(Convert.ToDateTime(x.DataNascimento)).ToString();
+                x.Sexo = ConverterSexo(Convert.ToInt32(d.Colunas["CODIGO DO SEXO"]));
+                x.EstadoCivil = ConverterEstadoCivil(Convert.ToInt32(d.Colunas["ESTADO CIVIL"]));
+                x.GrauParentesco = ConverterGrauParentesco(Convert.ToInt32(d.Colunas["COD. GRAU PARENT.DEP."]));
+                x.TitularDependente = ConverterTirular(Convert.ToInt32(d.Colunas["COD. GRAU PARENT.DEP."]));
+                x.CodigoPlano = d.Colunas["CODIGO DO PLANO"];
+                x.DataVigencia = d.Colunas["DATA INICIO VIGENCIA"];
+                x.DataCancelamento = string.Empty;
+                x.TipoLancamento = d.Colunas["TIPO DE LANÇAMENTO"];
+                x.DataTransferenciaSubfatura = string.Empty;
+                x.Cargo = d.Colunas["CARGO / OCUPACAO"];
+                x.ValorLancamento = d.Colunas["VALOR DO LANCAMENTO"];
+                resultSaude.Add(x);
+            }
+
+            return resultSaude;
+        }
+
         private List<PlanilhaFinalSaude> MontarResultSaude(List<LinhaGenerica> Saude, List<LinhaGenerica> Dental, List<Empresa> Empresas, List<LinhaGenerica> Dirf)
         {
             List<PlanilhaFinalSaude> resultSaude = new List<PlanilhaFinalSaude>();
 
-            Saude.RemoveAll(linha => !Dirf.Any(linha2 =>
-            linha.Colunas.TryGetValue("NOME SEGURADO/DEPENDENTE", out var nomeSeguradoDependente) &&
-            linha2.Colunas.TryGetValue("Nome Dependente", out var nomeDependente) &&
-            string.Equals(nomeSeguradoDependente, nomeDependente, StringComparison.OrdinalIgnoreCase) ||
-            linha.Colunas.TryGetValue("NOME SEGURADO/DEPENDENTE", out var nomeTitular) &&
-            linha2.Colunas.TryGetValue("Nome Segurado Titular", out var Titular) &&
-            string.Equals(nomeTitular, Titular, StringComparison.OrdinalIgnoreCase)));
+            //Saude.RemoveAll(linha => !Dirf.Any(linha2 =>
+            //linha.Colunas.TryGetValue("NOME SEGURADO/DEPENDENTE", out var nomeSeguradoDependente) &&
+            //linha2.Colunas.TryGetValue("Nome Dependente", out var nomeDependente) &&
+            //string.Equals(nomeSeguradoDependente, nomeDependente, StringComparison.OrdinalIgnoreCase) ||
+            //linha.Colunas.TryGetValue("NOME SEGURADO/DEPENDENTE", out var nomeTitular) &&
+            //linha2.Colunas.TryGetValue("Nome Segurado Titular", out var Titular) &&
+            //string.Equals(nomeTitular, Titular, StringComparison.OrdinalIgnoreCase)));
 
             Saude.RemoveAll(_ => _.Colunas["TIPO DO REGISTRO"] != "3" || _.Colunas["DATA DE NASCIMENTO"] == "00/00/0000");
 
@@ -174,7 +270,7 @@ namespace DataMerger.Services
 
                 var d = Dirf.Where(_ => _.Nome == s.Nome && _.Colunas.Where(_ => _.Key == "Nome Segurado Titular").FirstOrDefault().Value == s.Nome).FirstOrDefault();
                 PlanilhaFinalSaude x = new PlanilhaFinalSaude();
-                x.DataLancamento = $"{DateTime.Now.Month}/{DateTime.Now.Year}";
+                x.DataLancamento = s.Colunas["DATA DE LANCAMENTO"];
                 x.Subfatura = Empresas.Where(_ => _.Subfatura == Convert.ToInt32(s.Colunas.Where(_ => _.Key == "NUMERO DA SUBFATURA").FirstOrDefault().Value)).FirstOrDefault().Subfatura;
                 x.Empresa = Empresas?.Where(_ => _.Subfatura == x.Subfatura).FirstOrDefault().Emp;
                 x.CpfBeneficiario = d?.Colunas["CPF Titular"];
