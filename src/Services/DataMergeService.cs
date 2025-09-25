@@ -101,9 +101,9 @@ namespace DataMerger.Services
                     Console.WriteLine("Planilha final Dental gerada com sucesso.");
                 }
 
-                else if (key.KeyChar != '2' && key.KeyChar != '1')
+                else if (key.KeyChar != '2' && key.KeyChar != '1' && key.KeyChar != '3')
                 {
-                    Console.WriteLine("Tecla digitada não corresponde as opções 1 e 2.");
+                    Console.WriteLine("Tecla digitada não corresponde as opções 1, 2 ou 3.");
                     StartProcess();
                 }
 

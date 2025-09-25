@@ -1,0 +1,36 @@
+Os arquivos necessários no processamento de COPATICIPACAO são:
+DIRF.xlsx
+COPARTICIPAÇAO.xlsx
+SAUDE.xlsx
+CNPJS.xlsx
+O Arquivo de SAUDE é utilizado apenas para pegar as datas de nascimento.
+
+Os arquivos necessários no processamento de SAUDE são
+DIRF.xlsx
+DENTAL.xlsx
+SAUDE.xlsx
+CNPJS.xlsx
+
+Os arquivos necessários no processamento de DENTAL são
+DIRF.xlsx
+DENTAL.xlsx
+SAUDE.xlsx
+CNPJS.xlsx
+
+As Colunas dos arquivos devem estar na mesma disposição e com o mesmo nome, caso haja mudança será necessário alteração no programa.
+
+Todos os arquivos devem estar sempre no formato .xlsx
+
+O programa executa 3 opções, sendo elas:
+1- Planilha de Coparticipação
+2- Planilha de Saude
+3- Planilha de Dental
+
+Qual quer opção diferente dessas fara o programa perguntar novamente exibindo uma mensagem de erro.
+
+Ao final de cada processamento o programa vai perguntar se você quer processar outra planilha, as opões são:
+1- Sim
+2- Não
+
+Ao teclar 1 o programa irá perguntar qual a proxima planilha ao ser processada.
+Ao teclar 2 o programa irá fechar.
