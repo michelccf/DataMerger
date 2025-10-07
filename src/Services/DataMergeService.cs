@@ -453,29 +453,52 @@ namespace DataMerger.Services
             int skip = 0;
             int columnNome = 0;
 
+            // Pegar o cabeçalho
+            List<string> header = null;
+
             if (isDirf)
             {
                 skip = 3;
-                columnNome = 3;
+                header = rows[skip - 1].Cells().Where(_ => _.GetString() != string.Empty).Select(c => c.GetString()).ToList();
+                for (int i = 0; i < header.Count(); i++)
+                {
+                    if (header[i] == "Nome Segurado Titular")
+                        columnNome = i + 1;
+                }
             }
             if (isCopart)
             {
                 skip = 3;
-                columnNome = 5;
+                header = rows[skip - 1].Cells().Where(_ => _.GetString() != string.Empty).Select(c => c.GetString()).ToList();
+                for (int i = 0; i < header.Count(); i++)
+                {
+                    if (header[i] == "NOME DO SEGURADO")
+                        columnNome = i + 1;
+                }
             }
             if (isSaude)
             {
                 skip = 5;
-                columnNome = 5;
+                header = rows[skip - 1].Cells().Where(_ => _.GetString() != string.Empty).Select(c => c.GetString()).ToList();
+                for (int i = 0; i < header.Count(); i++)
+                {
+                    if (header[i] == "NOME SEGURADO/DEPENDENTE")
+                        columnNome = i + 1;
+                }
+                
 
             }
             if (isDental)
             {
                 skip = 5;
-                columnNome = 5;
+                header = rows[skip - 1].Cells().Where(_ => _.GetString() != string.Empty).Select(c => c.GetString()).ToList();
+                for (int i = 0; i < header.Count(); i++)
+                {
+                    if (header[i] == "NOME SEGURADO/DEPENDENTE")
+                        columnNome = i + 1;
+                }
+                
             }
-            // Pegar o cabeçalho
-            List<string> header = rows[skip - 1].Cells().Where(_ => _.GetString() != string.Empty).Select(c => c.GetString()).ToList();
 
 
             // percorrer linhas
@@ -484,6 +507,9 @@ namespace DataMerger.Services
                 string nome = string.Empty;
                 //Pega o nome do cliente refferênte à linha em questão
                 nome = row.Cell(columnNome).GetString();
+                
+
+
                 if (string.IsNullOrWhiteSpace(nome)) continue;
 
                 LinhaGenerica linha = new LinhaGenerica { Nome = nome };
