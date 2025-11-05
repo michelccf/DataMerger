@@ -39,11 +39,14 @@ namespace DataMerger.Services
                     List<Empresa> emp = LerPlanilhaCnpj("CNPJS.xlsx");
                     Console.WriteLine("CNPJS.xlsx lida.");
 
+                    List<NomeCpfSaude> NomeCpf = LerPlanilhaNomeCpfSaude("NOMECPFSAUDE.xlsx");
+                    Console.WriteLine("NOMECPFSAUDE.xlsx lida.");
+
                     RemoverValoresZerados(plan1);
 
                     plan1 = PreencherDadosAdicionais(plan1);
 
-                    List<PlanilhaFinal> result = MontarResult(plan1, plan2, emp, plan3);
+                    List<PlanilhaFinal> result = MontarResult(plan1, plan2, emp, plan3, NomeCpf);
                     Console.WriteLine("Definindo Cabeçalho da planilha final.");
                     string[] colunasDesejadas = new[] { "Matricula", "Titular", "CPF Titular", "Data Nascimento Titular", "Nome do Beneficiario", "CPF Beneficiario", "Data de Nascimento Beneficiario", "Valor", "Valor total", "Subfatura", "Data de referencia", "Nome do Prestador", "Cnpj prestador", "Valor reemboso anos anteriores" };
 
@@ -67,7 +70,10 @@ namespace DataMerger.Services
                     List<Empresa> emp = LerPlanilhaCnpj("CNPJS.xlsx");
                     Console.WriteLine("CNPJS.xlsx lida.");
 
-                    List<PlanilhaFinalSaude> resultSaude = MontarResultSaude(plan3, plan4, emp, plan1);
+                    List<NomeCpfSaude> NomeCpf = LerPlanilhaNomeCpfSaude("NOMECPFSAUDE.xlsx");
+                    Console.WriteLine("NOMECPFSAUDE.xlsx lida.");
+
+                    List<PlanilhaFinalSaude> resultSaude = MontarResultSaude(plan3, plan4, emp, plan1, NomeCpf);
 
                     string[] colunasDesejadasSaude = new[] { "DATA DE LANCAMENTO", "EMPRESA", "SUB FATURA", "CPF DO BENEFICIARIO", "MATRICULA ESPECIAL", "NUMERO DO CERTIFICADO", "NOME SEGURADO/DEPENDENTE", "DATA DE NASCIMENTO", "IDADE", "CODIGO DO SEXO", "ESTADO CIVIL", "COD. GRAU PARENT.DEP.", "TITULAR OU DEPENDENTE", "CODIGO DO PLANO", "VALOR DO LANCAMENTO", "DATA INICIO VIGENCIA", "DATA DE CANCELAMENTO", "TIPO DE LANÇAMENTO", "DATA TRANSFERENCIA DE SUBFATURA", "CARGO / OCUPACAO" };
                     Console.WriteLine("Definindo Cabeçalho da planilha final.");
@@ -91,7 +97,10 @@ namespace DataMerger.Services
                     List<Empresa> emp = LerPlanilhaCnpj("CNPJS.xlsx");
                     Console.WriteLine("CNPJS.xlsx lida.");
 
-                    List<PlanilhaFinalSaude> resultDental = MontarResultDental(plan3, plan4, emp, plan1);
+                    List<NomeCpfSaude> NomeCpf = LerPlanilhaNomeCpfDental("NOMECPFDENTAL.xlsx");
+                    Console.WriteLine("NOMECPFSAUDE.xlsx lida.");
+
+                    List<PlanilhaFinalSaude> resultDental = MontarResultDental(plan3, plan4, emp, plan1, NomeCpf);
 
                     string[] colunasDesejadasSaude = new[] { "DATA DE LANCAMENTO", "EMPRESA", "SUB FATURA", "CPF DO BENEFICIARIO", "MATRICULA ESPECIAL", "NUMERO DO CERTIFICADO", "NOME SEGURADO/DEPENDENTE", "DATA DE NASCIMENTO", "IDADE", "CODIGO DO SEXO", "ESTADO CIVIL", "COD. GRAU PARENT.DEP.", "TITULAR OU DEPENDENTE", "CODIGO DO PLANO", "VALOR DO LANCAMENTO", "DATA INICIO VIGENCIA", "DATA DE CANCELAMENTO", "TIPO DE LANÇAMENTO", "DATA TRANSFERENCIA DE SUBFATURA", "CARGO / OCUPACAO" };
                     Console.WriteLine("Definindo Cabeçalho da planilha final.");
@@ -124,6 +133,51 @@ namespace DataMerger.Services
                 Console.ReadLine();
             }
 
+        }
+
+        private List<NomeCpfSaude> LerPlanilhaNomeCpfDental(string caminho)
+        {
+            var lista = new List<NomeCpfSaude>();
+
+            using XLWorkbook wb = new XLWorkbook(caminho);
+            int totalSheets = wb.Worksheets.Count;
+
+            IXLWorksheet ws = null;
+
+            if (totalSheets > 1)
+            {
+                ws = wb.Worksheets.Last();
+            }
+            else
+                ws = wb.Worksheet(1);
+
+            List<IXLRangeRow> rows = ws.RangeUsed().RowsUsed().ToList();
+
+            if (!rows.Any()) return lista;
+
+            // Pegar o cabeçalho
+            List<string> header = rows.First().Cells().Select(c => c.GetString()).ToList();
+
+            // percorrer linhas
+            foreach (IXLRangeRow row in rows.Skip(1))
+            {
+                NomeCpfSaude linha = new NomeCpfSaude();
+
+                for (int i = 0; i < header.Count; i++)
+                {
+                    switch (i)
+                    {
+                        case 0:
+                            linha.Cpf = row.Cell(i + 1).GetString();
+                            break;
+                        case 1:
+                            linha.Nome = row.Cell(i + 1).GetString().Replace("-", "");
+                            break;
+                    }
+                }
+                lista.Add(linha);
+            }
+            return lista;
         }
 
         private void GerarPlanilhaFinalSaude(List<PlanilhaFinalSaude> resultSaude, string[] colunasDesejadas, string caminhoSaida)
@@ -215,7 +269,7 @@ namespace DataMerger.Services
             wb.SaveAs(caminhoSaida);
         }
 
-        private List<PlanilhaFinalSaude> MontarResultDental(List<LinhaGenerica> Saude, List<LinhaGenerica> Dental, List<Empresa> Empresas, List<LinhaGenerica> Dirf)
+        private List<PlanilhaFinalSaude> MontarResultDental(List<LinhaGenerica> Saude, List<LinhaGenerica> Dental, List<Empresa> Empresas, List<LinhaGenerica> Dirf, List<NomeCpfSaude> NomeCpf)
         {
             List<PlanilhaFinalSaude> resultSaude = new List<PlanilhaFinalSaude>();
 
@@ -240,6 +294,10 @@ namespace DataMerger.Services
                 x.Matricula = d.Colunas["MATRICULA ESPECIAL"];
                 x.NumeroCertificado = d.Colunas["NUMERO DO CERTIFICADO"];
                 x.NomeDependente = d.Nome;
+
+                if (string.IsNullOrEmpty(x.CpfBeneficiario))
+                    x.CpfBeneficiario = NomeCpf?.Where(_ => _.Nome == x.NomeDependente)?.FirstOrDefault()?.Cpf?.Trim()?.Replace("-", string.Empty);
+
                 x.DataNascimento = d.Colunas["DATA DE NASCIMENTO"];
                 x.Idade = CalcularIdade(Convert.ToDateTime(x.DataNascimento)).ToString();
                 x.Sexo = ConverterSexo(Convert.ToInt32(d.Colunas["CODIGO DO SEXO"]));
@@ -259,7 +317,7 @@ namespace DataMerger.Services
             return resultSaude;
         }
 
-        private List<PlanilhaFinalSaude> MontarResultSaude(List<LinhaGenerica> Saude, List<LinhaGenerica> Dental, List<Empresa> Empresas, List<LinhaGenerica> Dirf)
+        private List<PlanilhaFinalSaude> MontarResultSaude(List<LinhaGenerica> Saude, List<LinhaGenerica> Dental, List<Empresa> Empresas, List<LinhaGenerica> Dirf, List<NomeCpfSaude> NomeCpf)
         {
             List<PlanilhaFinalSaude> resultSaude = new List<PlanilhaFinalSaude>();
 
@@ -276,7 +334,7 @@ namespace DataMerger.Services
             foreach (var s in Saude)
             {
 
-
+                
                 var d = Dirf.Where(_ => _.Nome == s.Nome && _.Colunas.Where(_ => _.Key == "Nome Segurado Titular").FirstOrDefault().Value == s.Nome).FirstOrDefault();
                 PlanilhaFinalSaude x = new PlanilhaFinalSaude();
                 x.DataLancamento = s.Colunas["DATA DE LANCAMENTO"];
@@ -286,6 +344,10 @@ namespace DataMerger.Services
                 x.Matricula = s.Colunas["MATRICULA ESPECIAL"];
                 x.NumeroCertificado = s.Colunas["NUMERO DO CERTIFICADO"];
                 x.NomeDependente = s.Nome;
+
+                if (string.IsNullOrEmpty(x.CpfBeneficiario))
+                    x.CpfBeneficiario = NomeCpf?.Where(_ => _.Nome == x.NomeDependente)?.FirstOrDefault()?.Cpf?.Trim().Replace("-", string.Empty);
+
                 x.DataNascimento = s.Colunas["DATA DE NASCIMENTO"];
                 x.Idade = CalcularIdade(Convert.ToDateTime(x.DataNascimento)).ToString();
                 x.Sexo = ConverterSexo(Convert.ToInt32(s.Colunas["CODIGO DO SEXO"]));
@@ -383,54 +445,64 @@ namespace DataMerger.Services
             return plan1;
         }
 
-        private List<PlanilhaFinal> MontarResult(List<LinhaGenerica> Dirf, List<LinhaGenerica> Cop, List<Empresa> emp, List<LinhaGenerica> Saude)
+        private List<PlanilhaFinal> MontarResult(List<LinhaGenerica> Dirf, List<LinhaGenerica> Cop, List<Empresa> emp, List<LinhaGenerica> Saude, List<NomeCpfSaude> NomeCpf)
         {
             List<PlanilhaFinal> result = new List<PlanilhaFinal>();
 
             foreach (var d in Dirf)
             {
-                var cop = Cop.Where(_ => _.Nome == d.Nome)?.FirstOrDefault();
-                PlanilhaFinal x = new PlanilhaFinal();
-                x.Matricula = cop?.Colunas.Where(_ => _.Key == "MATRICULA ESPECIAL")?.FirstOrDefault().Value ?? string.Empty; // Onde pego?
-                x.Titular = d.Nome;
-                x.CPF_Titular = d.Colunas.Where(_ => _.Key == "CPF Titular").FirstOrDefault().Value;
-                x.Nome_Do_Beneficiario = d.Colunas.Where(_ => _.Key == "Nome Dependente").FirstOrDefault().Value;
-
-                if (x.Nome_Do_Beneficiario == string.Empty)
-                    x.Nome_Do_Beneficiario = x.Titular;
-
-                x.Data_Nascimento_Titular = Saude?.Where(_ => _.Colunas["NOME SEGURADO/DEPENDENTE"] == x.Titular || _.Colunas["NOME SEGURADO/DEPENDENTE"] == x.Nome_Do_Beneficiario)?.FirstOrDefault()?.Colunas["DATA DE NASCIMENTO"];
-
-                x.CPF_Beneficiario = d.Colunas.Where(_ => _.Key == "CPF Dependente").FirstOrDefault().Value;
-
-                if (x.CPF_Beneficiario == string.Empty)
-                    x.CPF_Beneficiario = x.CPF_Titular;
-
-                x.Data_De_Nascimento_Beneficiario = d.Colunas.Where(_ => _.Key == "Data Nascimento Dependente").FirstOrDefault().Value;
-
-                if (string.IsNullOrEmpty(x.Data_De_Nascimento_Beneficiario))
-                    x.Data_De_Nascimento_Beneficiario = x.Data_Nascimento_Titular;
-
-                x.Valor = d.Colunas.Where(_ => _.Key == "Valor Participação").FirstOrDefault().Value;
-
-                if (x.Valor == "0")
+                try
                 {
-                    x.Valor = string.Empty;
+                    var cop = Cop.Where(_ => _.Nome == d.Nome)?.FirstOrDefault();
+                    PlanilhaFinal x = new PlanilhaFinal();
+                    x.Matricula = cop?.Colunas.Where(_ => _.Key == "MATRICULA ESPECIAL")?.FirstOrDefault().Value ?? string.Empty; // Onde pego?
+                    x.Titular = d.Nome;
+                    x.CPF_Titular = d.Colunas.Where(_ => _.Key == "CPF Titular").FirstOrDefault().Value;
+                    x.Nome_Do_Beneficiario = d.Colunas.Where(_ => _.Key == "Nome Dependente").FirstOrDefault().Value;
+
+                    if (x.Nome_Do_Beneficiario == string.Empty)
+                        x.Nome_Do_Beneficiario = x.Titular;
+
+                    x.Data_Nascimento_Titular = Saude?.Where(_ => _.Colunas["NOME SEGURADO/DEPENDENTE"] == x.Titular || _.Colunas["NOME SEGURADO/DEPENDENTE"] == x.Nome_Do_Beneficiario)?.FirstOrDefault()?.Colunas["DATA DE NASCIMENTO"];
+
+                    x.CPF_Beneficiario = d.Colunas.Where(_ => _.Key == "CPF Dependente").FirstOrDefault().Value;
+
+                    if (x.CPF_Beneficiario == string.Empty)
+                        x.CPF_Beneficiario = x.CPF_Titular;
+
+                    if (string.IsNullOrEmpty(x.CPF_Beneficiario))
+                        x.CPF_Beneficiario = NomeCpf.Where(_ => _.Nome == x.Nome_Do_Beneficiario).FirstOrDefault().Cpf;
+
+                    x.Data_De_Nascimento_Beneficiario = d.Colunas.Where(_ => _.Key == "Data Nascimento Dependente").FirstOrDefault().Value;
+
+                    if (string.IsNullOrEmpty(x.Data_De_Nascimento_Beneficiario))
+                        x.Data_De_Nascimento_Beneficiario = x.Data_Nascimento_Titular;
+
+                    x.Valor = d.Colunas.Where(_ => _.Key == "Valor Participação").FirstOrDefault().Value;
+
+                    if (x.Valor == "0")
+                    {
+                        x.Valor = string.Empty;
+                    }
+
+                    x.Valor_Total = Convert.ToDecimal(d.Total) > 0 ? d.Total : "";
+                    x.Subfatura = cop?.Colunas.Where(_ => _.Key == "NUMERO DA SUBFATURA").FirstOrDefault().Value;
+
+                    x.Data_De_referencia = $"01/{(DateTime.Now.Month - 2).ToString().PadLeft(2, '0')}/{DateTime.Now.Year}";
+
+                    x.NomeEmpresa = emp.Where(_ => _.Subfatura == Convert.ToInt32(x.Subfatura)).FirstOrDefault().Emp;
+                    x.Cnpj_Prestador = emp.Where(_ => _.Subfatura == Convert.ToInt32(x.Subfatura)).FirstOrDefault().Cnpj; // Onde pego?
+                    x.Valor_reemboso_anos_anteriores = string.Empty; // Onde pego?
+                    x.QtdDependentes = d.QtdDependentes;
+
+                    if (x.Matricula == null)
+                        x.Matricula = "";
+                    result.Add(x);
                 }
-
-                x.Valor_Total = Convert.ToDecimal(d.Total) > 0 ? d.Total : "";
-                x.Subfatura = cop?.Colunas.Where(_ => _.Key == "NUMERO DA SUBFATURA").FirstOrDefault().Value;
-
-                x.Data_De_referencia = $"01/{(DateTime.Now.Month -2).ToString().PadLeft(2, '0')}/{DateTime.Now.Year}"; 
-
-                x.NomeEmpresa = emp.Where(_ => _.Subfatura == Convert.ToInt32(x.Subfatura)).FirstOrDefault().Emp;
-                x.Cnpj_Prestador = emp.Where(_ => _.Subfatura == Convert.ToInt32(x.Subfatura)).FirstOrDefault().Cnpj; // Onde pego?
-                x.Valor_reemboso_anos_anteriores = string.Empty; // Onde pego?
-                x.QtdDependentes = d.QtdDependentes;
-
-                if (x.Matricula == null)
-                    x.Matricula = "";
-                result.Add(x);
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Não encontrado o cruzamento para o Segurado na Dirf:{d.Nome}");
+                }
             }
             return result;
         }
@@ -440,7 +512,17 @@ namespace DataMerger.Services
             var lista = new List<LinhaGenerica>();
 
             using XLWorkbook wb = new XLWorkbook(caminho);
-            IXLWorksheet ws = wb.Worksheet(1); // primeira aba
+            int totalSheets = wb.Worksheets.Count;
+
+            IXLWorksheet ws = null;
+
+            if (totalSheets > 1)
+            {
+                ws = wb.Worksheets.Last();
+            }
+            else
+                ws = wb.Worksheet(1);
+               
             List<IXLRangeRow> rows = ws.RangeUsed().RowsUsed().ToList();
 
             if (!rows.Any()) return lista;
@@ -558,6 +640,41 @@ namespace DataMerger.Services
                         case 2:
                             linha.Emp = row.Cell(i + 1).GetString();
                         break;
+                    }
+                }
+                lista.Add(linha);
+            }
+            return lista;
+        }
+
+        private List<NomeCpfSaude> LerPlanilhaNomeCpfSaude(string caminho)
+        {
+            var lista = new List<NomeCpfSaude>();
+
+            using XLWorkbook wb = new XLWorkbook(caminho);
+            IXLWorksheet ws = wb.Worksheet(1); // primeira aba
+            List<IXLRangeRow> rows = ws.RangeUsed().RowsUsed().ToList();
+
+            if (!rows.Any()) return lista;
+
+            // Pegar o cabeçalho
+            List<string> header = rows.First().Cells().Select(c => c.GetString()).ToList();
+
+            // percorrer linhas
+            foreach (IXLRangeRow row in rows.Skip(1))
+            {
+                NomeCpfSaude linha = new NomeCpfSaude();
+
+                for (int i = 0; i < header.Count; i++)
+                {
+                    switch (i)
+                    {
+                        case 0:
+                            linha.Cpf = row.Cell(i + 1).GetString();
+                            break;
+                        case 1:
+                            linha.Nome = row.Cell(i + 1).GetString().Replace("-", "");
+                            break;
                     }
                 }
                 lista.Add(linha);
